@@ -8,7 +8,6 @@ import os
 
 def email():
 
-   #FROM = "admirhalilovic1002@gmail.com"
     FROM = os.environ.get('GMAIL_USER')
     gmail_password = os.environ.get('GMAIL_PASSWORD')
     TO = os.environ.get('TO_MY_PRIVATE_MAIL')
