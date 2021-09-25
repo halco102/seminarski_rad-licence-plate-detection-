@@ -2,7 +2,32 @@ import cv2
 import numpy as np
 import pytesseract
 import imutils
+import smtplib
+import os
 
+
+def email():
+
+   #FROM = "admirhalilovic1002@gmail.com"
+    FROM = os.environ.get('GMAIL_USER')
+    gmail_password = os.environ.get('GMAIL_PASSWORD')
+    TO = os.environ.get('TO_MY_PRIVATE_MAIL')
+    SUBJECT = "Parking"
+    TEXT = "Your parking spot is taken"
+
+    message = """From: %s\nTo: %s\nSubject: %s\n\n%s
+    """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.ehlo()
+        server.starttls()
+        server.login(FROM, gmail_password)
+        server.sendmail(FROM, TO, message)
+        server.close()
+        print("Sent msg")
+    except:
+        print("Something went wrong")
 
 def test(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -43,6 +68,7 @@ def test(img):
     # Read the number plate
     text = pytesseract.image_to_string(Cropped, config='--psm 11')
     print("Detected Number is:", text)
+    return text
 
 cam = cv2.VideoCapture(0)
 
@@ -51,13 +77,20 @@ while(True):
     ret, img = cam.read()
     cv2.imshow("Kamera", img)
 
-    if (cv2.waitKey(1) & 0xFF == ord('q')):
-        break
 
     if(test(img) == 0):
         test(img)
     else:
-        test(img)
+        if (test(img) == 'ABC 123'):
+            print("The value is true")
+            print("Finish program")
+
+
+    if (cv2.waitKey(1) & 0xFF == ord('q')):
+        email()
+        break
+
+
 
 cam.release()
 cv2.destroyAllWindows()
