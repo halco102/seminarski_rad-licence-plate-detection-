@@ -1,21 +1,23 @@
+import serial
 import cv2
 import numpy as np
 import pytesseract
 import imutils
 import smtplib
 import os
+import re
 
 
 def email():
-
-    FROM = os.environ.get('GMAIL_USER')
-    gmail_password = os.environ.get('GMAIL_PASSWORD')
-    TO = os.environ.get('TO_MY_PRIVATE_MAIL')
+    # Pogledajte na google SMTP, kako da mozete preko svog gmail-a slati mail preko coda
+    FROM = 'VAS_GMAIL'
+    gmail_password = 'VAS_GMAIL_PASS'
+    TO = 'DRUGA_ADRESA'
     SUBJECT = "Parking"
     TEXT = "Your parking spot is taken"
 
     message = """From: %s\nTo: %s\nSubject: %s\n\n%s
-    """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+    """ % (FROM, TO, SUBJECT, TEXT)
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
@@ -25,10 +27,13 @@ def email():
         server.sendmail(FROM, TO, message)
         server.close()
         print("Sent msg")
+        return True
     except:
         print("Something went wrong")
+        return False
 
-def test(img):
+
+def plate_search(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.bilateralFilter(gray, 11, 17, 17)
     edged = cv2.Canny(gray, 30, 200)
@@ -66,33 +71,54 @@ def test(img):
 
     # Read the number plate
     text = pytesseract.image_to_string(Cropped, config='--psm 11')
+
     print("Detected Number is:", text)
+
     return text
 
-cam = cv2.VideoCapture(0)
 
-while(True):
+def programStart():
+    print("Start main")
+    cam = cv2.VideoCapture(0)
+    error_number = 0
 
-    ret, img = cam.read()
-    cv2.imshow("Kamera", img)
+    while (True):
 
+        ret, img = cam.read()
+        cv2.imshow("Kamera", img)
 
-    if(test(img) == 0):
-        test(img)
-    else:
-        if (test(img) == 'ABC 123'):
+        tablica = str("ABC 123")
+        temp = str(plate_search(img))
+
+        if (tablica in temp):
             print("The value is true")
             print("Finish program")
+            break
+
+        if (cv2.waitKey(1) & 0xFF == ord('q')):
+            break
+
+        error_number += 1
+        print(error_number)
+
+        if (error_number > 20):
+            print("Cant read license, too much errors, sendim email")
+            email()
+            break
+
+    cam.release()
+    cv2.destroyAllWindows()
 
 
-    if (cv2.waitKey(1) & 0xFF == ord('q')):
-        email()
-        break
+ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+num = ""
+while True:
 
-
-
-cam.release()
-cv2.destroyAllWindows()
-
+    read_serial = ser.readline()
+    for c in read_serial:
+        # dobit cemo int brojeve
+        if c < 15:
+            programStart()
+            raise SystemExit
 
 
